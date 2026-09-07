@@ -15,7 +15,10 @@
         <h1>Trick Judge</h1>
         <p class="subhead">Read the takeoff, axis and rotation. Then make the call.</p>
       </div>
-      <button id="howBtn" class="ghost-btn" type="button">How to play</button>
+      <div class="top-actions">
+        <button id="shopBtn" class="coin-btn" type="button"><span class="coin-dot"></span> Shop</button>
+        <button id="howBtn" class="ghost-btn" type="button">How to play</button>
+      </div>
     </header>
 
     <section class="hud" aria-label="Game stats">
@@ -23,6 +26,7 @@
       <div class="hud-card"><span>Round</span><strong id="round">1</strong></div>
       <div class="hud-card"><span>Lives</span><strong id="lives">3</strong></div>
       <div class="hud-card"><span>Combo</span><strong id="combo">×1</strong></div>
+      <div class="hud-card coin-card"><span>Coins</span><strong><i class="coin-dot"></i><b id="coins">0</b></strong></div>
     </section>
 
     <section class="arena-shell">
@@ -31,7 +35,7 @@
         <div class="arena-vignette"></div>
         <div class="arena-topline">
           <div class="live-pill"><span class="live-dot"></span><span id="statusText">WATCH THE TRICK</span></div>
-          <div class="facing-pill">START FACING <b>→</b></div>
+          <div class="facing-pill">TRAVEL <b>→</b></div>
         </div>
         <div class="judge-desk" aria-hidden="true"><span></span><span></span><span></span></div>
         <div id="webglError" class="webgl-error hidden">Your browser could not start the 3D arena.</div>
@@ -57,15 +61,51 @@
     </section>
   </main>
 
+  <dialog id="shopDialog" class="shop-dialog">
+    <div class="dialog-inner shop-inner">
+      <div class="dialog-title-row">
+        <div>
+          <p class="eyebrow">LOCKER ROOM</p>
+          <h2>Shop</h2>
+        </div>
+        <div class="shop-title-actions">
+          <div class="shop-balance"><span class="coin-dot"></span><strong id="shopCoins">0</strong></div>
+          <button id="closeShop" class="icon-btn" type="button" aria-label="Close shop">×</button>
+        </div>
+      </div>
+
+      <section class="shop-section">
+        <div class="shop-section-head">
+          <div>
+            <h3>Characters</h3>
+            <p>Buy a look, then equip it.</p>
+          </div>
+        </div>
+        <div id="characterShop" class="shop-grid"></div>
+      </section>
+
+      <section class="shop-section">
+        <div class="shop-section-head">
+          <div>
+            <h3>Tricks</h3>
+            <p>Unlocked tricks get added to the moves you can be judged on.</p>
+          </div>
+        </div>
+        <div id="trickShop" class="shop-grid"></div>
+      </section>
+      <p id="shopMessage" class="shop-message" aria-live="polite"></p>
+    </div>
+  </dialog>
+
   <dialog id="howDialog">
     <div class="dialog-inner">
       <div class="dialog-title-row">
         <h2>How to play</h2>
         <button id="closeHow" class="icon-btn" type="button" aria-label="Close">×</button>
       </div>
-      <p>The athlete always starts facing right. The face, nose, chest stripe and shoes make orientation readable while the body rotates.</p>
-      <p>Frontflip rotates toward the athlete's facing direction. Backflip rotates away from it. Sideflip rolls around the direction of travel. Spins rotate upright around the vertical axis.</p>
-      <p>Correct calls add score and combo. Wrong calls cost a life.</p>
+      <p>The athlete faces and travels to the right on running tricks. The nose, chest stripe and shoes make direction readable.</p>
+      <p>A standing backflip stays almost over the takeoff point. A gainer travels forward while rotating backward, so the two no longer look like the same move.</p>
+      <p>Correct calls earn score, combo and coins. Spend coins in the shop on character skins and new tricks.</p>
     </div>
   </dialog>
 
