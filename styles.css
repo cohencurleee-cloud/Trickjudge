@@ -1,0 +1,65 @@
+:root{
+  --bg:#08090c;
+  --panel:#101218;
+  --panel2:#161922;
+  --text:#f7f8fb;
+  --muted:#9da3b2;
+  --line:#242936;
+  --accent:#6ef2c4;
+  --danger:#ff6b7d;
+  --gold:#ffd166;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at top,#151822 0,#08090c 45%,#050608 100%);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{padding:18px}
+button{font:inherit}
+.app-shell{width:min(1180px,100%);margin:0 auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+h1,h2,p{margin:0}
+h1{font-size:clamp(28px,5vw,52px);line-height:1;letter-spacing:-.04em}
+h2{font-size:clamp(20px,3vw,30px)}
+.eyebrow{font-size:11px;letter-spacing:.18em;color:var(--muted);font-weight:800;margin-bottom:8px}
+.ghost-btn,.secondary-btn,.primary-btn,.icon-btn,.answer-btn{border:0;color:var(--text);cursor:pointer}
+.ghost-btn,.secondary-btn{background:#151821;border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+.primary-btn{background:var(--accent);color:#06110d;border-radius:14px;padding:12px 18px;font-weight:900}
+.hidden{display:none!important}
+.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.hud-card{background:rgba(17,19,26,.8);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;justify-content:space-between;align-items:end;gap:8px;backdrop-filter:blur(14px)}
+.hud-card span{color:var(--muted);font-size:12px}.hud-card strong{font-size:22px}
+.arena-wrap{border-radius:24px;padding:1px;background:linear-gradient(120deg,#303643,#181b24 45%,#28303a);box-shadow:0 30px 70px rgba(0,0,0,.35)}
+.arena{position:relative;overflow:hidden;min-height:560px;border-radius:23px;background:linear-gradient(#171b28 0 22%,#222633 22% 56%,#1a1d24 56% 72%,#0d0f14 72%);perspective:1200px}
+.arena::before{content:"";position:absolute;left:0;right:0;top:55%;height:1px;background:rgba(255,255,255,.08)}
+.arena-lights{position:absolute;inset:0 0 auto;height:180px;background:radial-gradient(circle at 14% -10%,rgba(255,255,255,.4),transparent 22%),radial-gradient(circle at 50% -10%,rgba(255,255,255,.34),transparent 24%),radial-gradient(circle at 86% -10%,rgba(255,255,255,.4),transparent 22%);filter:blur(.2px)}
+.stands{position:absolute;top:120px;bottom:135px;width:25%;opacity:.8;background:repeating-linear-gradient(180deg,rgba(255,255,255,.045) 0 2px,transparent 2px 22px),radial-gradient(circle,#303441 0 2px,transparent 3px);background-size:auto,22px 22px}
+.stands-left{left:0;clip-path:polygon(0 0,100% 20%,100% 100%,0 100%)}
+.stands-right{right:0;clip-path:polygon(0 20%,100% 0,100% 100%,0 100%)}
+.scoreboard{position:absolute;left:50%;top:34px;transform:translateX(-50%);padding:10px 16px;border-radius:10px;background:#080a0f;border:1px solid #2c3340;color:var(--accent);font-size:12px;letter-spacing:.15em;font-weight:900;box-shadow:0 0 30px rgba(110,242,196,.08)}
+.runway{position:absolute;left:13%;right:13%;bottom:122px;height:95px;transform:perspective(600px) rotateX(60deg);transform-origin:bottom;background:linear-gradient(90deg,#232730,#414753 50%,#232730);border:1px solid rgba(255,255,255,.1);border-radius:8px}
+.runway::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;background:linear-gradient(transparent,rgba(255,255,255,.25),transparent)}
+.landing-line{position:absolute;left:22%;right:22%;bottom:143px;height:2px;background:rgba(255,255,255,.3);box-shadow:0 0 12px rgba(255,255,255,.12)}
+.judge-rail{position:absolute;left:0;right:0;bottom:0;height:86px;background:linear-gradient(#0a0c10,#050608);border-top:2px solid #353b46;display:flex;justify-content:space-around;align-items:flex-start;padding-top:10px}
+.judge-rail span{width:70px;height:28px;border-radius:50% 50% 14px 14px;background:#151922;border:1px solid #2b313b}
+.athlete-stage{position:absolute;left:50%;bottom:146px;width:140px;height:250px;transform:translateX(-50%);transform-style:preserve-3d;will-change:transform}
+.athlete{position:absolute;left:50%;bottom:0;width:92px;height:206px;transform:translateX(-50%);transform-style:preserve-3d;will-change:transform;filter:drop-shadow(0 22px 16px rgba(0,0,0,.4))}
+.head{position:absolute;left:30px;top:0;width:34px;height:40px;border-radius:46% 46% 44% 44%;background:linear-gradient(90deg,#ddb48a,#f1c59a 56%,#c98e67);box-shadow:inset -5px 0 0 rgba(0,0,0,.09)}
+.head::after{content:"";position:absolute;right:-3px;top:16px;width:6px;height:4px;border-radius:50%;background:#eab78e}
+.neck{position:absolute;left:39px;top:34px;width:18px;height:18px;border-radius:6px;background:#dba77f}
+.torso{position:absolute;left:22px;top:45px;width:50px;height:72px;border-radius:18px 18px 12px 12px;background:linear-gradient(90deg,#ff6f61,#ff8b6b 50%,#da4e52);box-shadow:inset -8px 0 0 rgba(0,0,0,.12)}
+.torso::before{content:"";position:absolute;left:13px;right:13px;top:15px;height:2px;background:rgba(255,255,255,.18)}
+.hips{position:absolute;left:26px;top:108px;width:42px;height:25px;border-radius:10px;background:linear-gradient(90deg,#1b2638,#273a54,#162132)}
+.limb{position:absolute;transform-origin:top center;transform-style:preserve-3d}
+.limb .upper,.limb .lower,.limb .shoe{position:absolute;display:block;left:50%;transform:translateX(-50%);border-radius:999px}
+.arm{top:52px;width:20px;height:82px}.arm .upper{top:0;width:16px;height:42px;background:linear-gradient(90deg,#ddb48a,#f1c59a,#c98e67)}.arm .lower{top:36px;width:14px;height:44px;background:linear-gradient(90deg,#ddb48a,#f1c59a,#c98e67);transform-origin:top center}
+.left-arm{left:9px;transform:rotate(16deg)}.right-arm{right:9px;transform:rotate(-16deg)}
+.leg{top:126px;width:26px;height:92px}.leg .upper{top:0;width:23px;height:48px;background:linear-gradient(90deg,#111923,#1c2a3a,#0c131c)}.leg .lower{top:40px;width:18px;height:46px;background:linear-gradient(90deg,#c69470,#e1b089,#b67f5d);transform-origin:top center}.leg .shoe{top:80px;width:30px;height:12px;border-radius:8px 14px 6px 6px;background:#f2f2f2;transform:translateX(-42%)}
+.left-leg{left:21px;transform:rotate(4deg)}.right-leg{right:21px;transform:rotate(-4deg)}
+.motion-trail{position:absolute;left:50%;bottom:150px;width:72px;height:170px;border-radius:50%;border:2px solid rgba(255,255,255,.06);opacity:0;transform:translateX(-50%)}
+.controls-row{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.guess-panel{background:rgba(16,18,24,.9);border:1px solid var(--line);border-radius:20px;padding:18px}
+.guess-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+.difficulty-pill{font-size:12px;font-weight:800;padding:8px 10px;border-radius:999px;background:#1a1f29;color:var(--gold);border:1px solid #343c49}
+.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.answer-btn{min-height:54px;border-radius:14px;border:1px solid var(--line);background:#171a22;text-align:left;padding:14px 16px;font-weight:800;transition:.15s ease}.answer-btn:hover{border-color:#3e4654;background:#1c2029}.answer-btn.correct{border-color:#3bd39d;background:rgba(59,211,157,.12)}.answer-btn.wrong{border-color:#ff6b7d;background:rgba(255,107,125,.12)}.answer-btn:disabled{cursor:default;opacity:.88}
+.feedback{min-height:24px;margin-top:14px;color:var(--muted)}
+dialog{border:1px solid var(--line);border-radius:20px;background:#101219;color:var(--text);max-width:520px;width:calc(100% - 32px);padding:0;box-shadow:0 35px 90px rgba(0,0,0,.6)}dialog::backdrop{background:rgba(0,0,0,.68);backdrop-filter:blur(8px)}.dialog-inner{padding:20px}.dialog-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.dialog-inner p{color:var(--muted);line-height:1.6;margin-top:10px}.icon-btn{width:40px;height:40px;border-radius:12px;background:#171a22;font-size:24px}
+@media(max-width:720px){body{padding:10px}.hud{grid-template-columns:repeat(2,1fr)}.arena{min-height:480px}.stands{width:32%}.runway{left:6%;right:6%}.athlete-stage{bottom:132px;transform:translateX(-50%) scale(.86);transform-origin:bottom center}.answers{grid-template-columns:1fr}.topbar{align-items:flex-end}.ghost-btn{padding:10px 12px}.judge-rail span{width:48px}}
+@media(max-width:400px){.arena{min-height:440px}.athlete-stage{transform:translateX(-50%) scale(.78)}.hud-card strong{font-size:19px}}
