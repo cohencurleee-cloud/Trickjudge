@@ -13,6 +13,30 @@
     }
   }
   </script>
+  <script>
+  // Mobile Safari was rejecting the direct Soldier.glb hosts used by app2.js.
+  // Three.js itself already loads successfully from jsDelivr, so route only
+  // those model requests through CDN URLs that return the same GLB asset.
+  (() => {
+    const nativeFetch = window.fetch.bind(window);
+    const official = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r166/examples/models/gltf/Soldier.glb';
+    const mirror = 'https://cdn.jsdelivr.net/gh/Sogrey/three.js-examples-models@main/gltf/Soldier.glb';
+
+    window.fetch = (input, init) => {
+      const url = typeof input === 'string' ? input : (input && input.url) || '';
+      let target = null;
+
+      if (url.includes('threejs.org/examples/models/gltf/Soldier.glb')) target = official;
+      if (url.includes('raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/Soldier.glb')) target = mirror;
+
+      if (!target) return nativeFetch(input, init);
+
+      const requestInit = { ...(init || {}), mode: 'cors', credentials: 'omit' };
+      if (input instanceof Request && input.signal) requestInit.signal = input.signal;
+      return nativeFetch(target, requestInit);
+    };
+  })();
+  </script>
 </head>
 <body>
   <main class="app-shell">
