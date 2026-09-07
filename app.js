@@ -1,766 +1,103 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 
 const $ = (s) => document.querySelector(s);
-const canvas = $('#arenaCanvas');
-const arena = $('#arena');
-const webglError = $('#webglError');
-const scoreEl = $('#score');
-const roundEl = $('#round');
-const livesEl = $('#lives');
-const comboEl = $('#combo');
-const coinsEl = $('#coins');
-const answersEl = $('#answers');
-const feedbackEl = $('#feedback');
-const difficultyEl = $('#difficulty');
-const statusText = $('#statusText');
-const replayBtn = $('#replayBtn');
-const slowBtn = $('#slowBtn');
-const restartBtn = $('#restartBtn');
-const shopDialog = $('#shopDialog');
-const characterShop = $('#characterShop');
-const trickShop = $('#trickShop');
-const shopCoinsEl = $('#shopCoins');
-const shopMessage = $('#shopMessage');
+const canvas=$('#arenaCanvas'), arena=$('#arena'), webglError=$('#webglError');
+const scoreEl=$('#score'), roundEl=$('#round'), livesEl=$('#lives'), comboEl=$('#combo'), coinsEl=$('#coins');
+const answersEl=$('#answers'), feedbackEl=$('#feedback'), difficultyEl=$('#difficulty'), statusText=$('#statusText');
+const replayBtn=$('#replayBtn'), slowBtn=$('#slowBtn'), restartBtn=$('#restartBtn');
+const shopDialog=$('#shopDialog'), characterShop=$('#characterShop'), trickShop=$('#trickShop'), shopCoinsEl=$('#shopCoins'), shopMessage=$('#shopMessage');
+
+const SAVE_KEY='trickJudgeSaveV2';
+const defaultSave={coins:0,ownedCharacters:['rookie'],equippedCharacter:'rookie',ownedTricks:['backflip','frontflip','sideflip','spin360']};
+let save=loadSave();
+function loadSave(){try{return {...defaultSave,...JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')}}catch{return {...defaultSave}}}
+function persist(){localStorage.setItem(SAVE_KEY,JSON.stringify(save));}
 
 let renderer;
-try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-} catch (error) {
-  webglError.classList.remove('hidden');
-  throw error;
-}
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.12;
+try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch(e){webglError.classList.remove('hidden');throw e;}
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2)); renderer.shadowMap.enabled=true; renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping;
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x111722); scene.fog=new THREE.Fog(0x111722,15,34);
+const camera=new THREE.PerspectiveCamera(40,1,.1,100); camera.position.set(0,4.2,12.2); camera.lookAt(0,2.0,0);
+scene.add(new THREE.HemisphereLight(0xbad0ff,0x20242c,2.2));
+const key=new THREE.DirectionalLight(0xffffff,3.1); key.position.set(-4,9,6); key.castShadow=true; scene.add(key);
+const rim=new THREE.DirectionalLight(0x7cf4cd,1.2); rim.position.set(5,5,-3); scene.add(rim);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(20,11),new THREE.MeshStandardMaterial({color:0x272d36,roughness:.9})); floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+const runway=new THREE.Mesh(new THREE.BoxGeometry(12,.08,2.8),new THREE.MeshStandardMaterial({color:0x48515c,roughness:.72})); runway.position.y=.04; runway.receiveShadow=true; scene.add(runway);
+for(const x of [-5,0,5]){const m=new THREE.Mesh(new THREE.BoxGeometry(.04,.015,2.7),new THREE.MeshBasicMaterial({color:0xc8d0da,transparent:true,opacity:.35}));m.position.set(x,.09,0);scene.add(m)}
+const wall=new THREE.Mesh(new THREE.PlaneGeometry(24,10),new THREE.MeshStandardMaterial({color:0x171c26,roughness:1}));wall.position.set(0,4.7,-6);scene.add(wall);
+const crowdGeo=new THREE.SphereGeometry(.11,8,6), crowdMats=[0x1f2530,0x2a303a,0x343a45,0x181d24].map(c=>new THREE.MeshStandardMaterial({color:c}));
+for(let r=0;r<8;r++)for(let i=0;i<38;i++){const m=new THREE.Mesh(crowdGeo,crowdMats[(i+r)%crowdMats.length]);m.position.set(-9+i*.5+(r%2)*.15,1.45+r*.42,-5.15+r*.08);scene.add(m)}
+const shadow=new THREE.Mesh(new THREE.CircleGeometry(.8,36),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.28,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.095;shadow.scale.set(1.5,.7,1);scene.add(shadow);
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x111722);
-scene.fog = new THREE.Fog(0x111722, 13, 30);
+const mat={skin:new THREE.MeshStandardMaterial({color:0xe1aa80,roughness:.78}),skinDark:new THREE.MeshStandardMaterial({color:0xc98561}),shirt:new THREE.MeshStandardMaterial({color:0xef5a59}),shirtDark:new THREE.MeshStandardMaterial({color:0xb93e47}),shorts:new THREE.MeshStandardMaterial({color:0x182a43}),shoe:new THREE.MeshStandardMaterial({color:0xf3f4f6}),sole:new THREE.MeshStandardMaterial({color:0x20242b}),hair:new THREE.MeshStandardMaterial({color:0x24180f}),white:new THREE.MeshStandardMaterial({color:0xffffff}),dark:new THREE.MeshStandardMaterial({color:0x11151d})};
+const box=(w,h,d,m)=>{const x=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);x.castShadow=true;return x};
+const cap=(r,l,m)=>{const x=new THREE.Mesh(new THREE.CapsuleGeometry(r,l,6,14),m);x.castShadow=true;return x};
+const ball=(r,m)=>{const x=new THREE.Mesh(new THREE.SphereGeometry(r,18,14),m);x.castShadow=true;return x};
+const root=new THREE.Group(), rig=new THREE.Group(); root.add(rig); scene.add(root);
+const torso=cap(.34,.62,mat.shirt);torso.scale.set(.94,1,1.18);torso.position.y=.62;rig.add(torso);
+const chest=box(.055,.42,.5,mat.white);chest.position.set(.35,.7,0);rig.add(chest);
+const back=box(.055,.28,.5,mat.dark);back.position.set(-.35,.7,0);rig.add(back);
+const hips=box(.62,.34,.82,mat.shorts);hips.position.y=-.04;rig.add(hips);
+const head=new THREE.Group();head.position.set(0,1.48,0);rig.add(head);const face=ball(.31,mat.skin);face.scale.set(.92,1.08,.94);head.add(face);const hair=ball(.305,mat.hair);hair.scale.y=.52;hair.position.y=.17;head.add(hair);const nose=new THREE.Mesh(new THREE.ConeGeometry(.055,.16,10),mat.skinDark);nose.rotation.z=-Math.PI/2;nose.position.x=.325;head.add(nose);const eye=ball(.024,mat.dark);eye.position.set(.26,.08,.18);head.add(eye);
+function arm(side){const s=new THREE.Group();s.position.set(0,.97,.48*side);rig.add(s);const u=cap(.105,.46,mat.skin);u.position.y=-.34;s.add(u);const e=new THREE.Group();e.position.y=-.68;s.add(e);e.add(ball(.11,mat.skin));const l=cap(.09,.42,mat.skin);l.position.y=-.31;e.add(l);const h=ball(.11,mat.skin);h.position.y=-.62;e.add(h);return{s,e}}
+function leg(side){const h=new THREE.Group();h.position.set(0,-.12,.24*side);rig.add(h);const t=cap(.15,.55,mat.shorts);t.position.y=-.4;h.add(t);const k=new THREE.Group();k.position.y=-.8;h.add(k);k.add(ball(.14,mat.skin));const sh=cap(.12,.5,mat.skin);sh.position.y=-.37;k.add(sh);const a=new THREE.Group();a.position.y=-.72;k.add(a);const f=box(.43,.16,.25,mat.shoe);f.position.set(.12,-.06,0);a.add(f);const so=box(.44,.05,.26,mat.sole);so.position.set(.12,-.14,0);a.add(so);return{h,k,a}}
+const LA=arm(1),RA=arm(-1),LL=leg(1),RL=leg(-1); const ROOT_Y=1.72;
+function resetPose(){for(const j of [LA.s,RA.s,LA.e,RA.e,LL.h,RL.h,LL.k,RL.k,LL.a,RL.a])j.rotation.set(0,0,0);rig.rotation.set(0,0,0);rig.position.set(0,0,0)}
+function runPose(t){resetPose();const p=t*Math.PI*8,s=Math.sin(p),o=-s;LL.h.rotation.z=s*.72;RL.h.rotation.z=o*.72;LL.k.rotation.z=Math.max(0,-s)*1.1;RL.k.rotation.z=Math.max(0,-o)*1.1;LA.s.rotation.z=o*.7;RA.s.rotation.z=s*.7;LA.e.rotation.z=.3;RA.e.rotation.z=.3;rig.rotation.z=-.09;rig.position.y=Math.abs(Math.sin(p))*.035}
+function crouchPose(v=1){resetPose();LL.h.rotation.z=RL.h.rotation.z=-.72*v;LL.k.rotation.z=RL.k.rotation.z=1.35*v;LA.s.rotation.z=RA.s.rotation.z=-1.7*v;rig.position.y=-.2*v}
+function tuckPose(v=1){resetPose();LL.h.rotation.z=RL.h.rotation.z=-1.28*v;LL.k.rotation.z=RL.k.rotation.z=2.1*v;LA.s.rotation.z=RA.s.rotation.z=-1.1*v;LA.e.rotation.z=RA.e.rotation.z=1.15*v}
+function layoutPose(){resetPose();LA.s.rotation.z=RA.s.rotation.z=-.55;LL.h.rotation.z=RL.h.rotation.z=-.15}
+function sidePose(){resetPose();LA.s.rotation.x=-1.15;RA.s.rotation.x=1.15;LL.h.rotation.z=-.3;RL.h.rotation.z=.3}
+function landingPose(v=1){crouchPose(.75*v)}
 
-const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-camera.position.set(0, 4.25, 11.8);
-camera.lookAt(0, 2.15, 0);
-
-scene.add(new THREE.HemisphereLight(0xaecbff, 0x20232b, 2.15));
-const keyLight = new THREE.DirectionalLight(0xffffff, 3.15);
-keyLight.position.set(-4, 9, 7);
-keyLight.castShadow = true;
-keyLight.shadow.mapSize.set(1024, 1024);
-keyLight.shadow.camera.left = -8;
-keyLight.shadow.camera.right = 8;
-keyLight.shadow.camera.top = 8;
-keyLight.shadow.camera.bottom = -2;
-scene.add(keyLight);
-const rimLight = new THREE.DirectionalLight(0x7cf4cd, 1.2);
-rimLight.position.set(5, 5, -4);
-scene.add(rimLight);
-
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(18, 10),
-  new THREE.MeshStandardMaterial({ color: 0x262c35, roughness: 0.86, metalness: 0.02 })
-);
-floor.rotation.x = -Math.PI / 2;
-floor.receiveShadow = true;
-scene.add(floor);
-
-const runway = new THREE.Mesh(
-  new THREE.BoxGeometry(10.5, 0.08, 2.7),
-  new THREE.MeshStandardMaterial({ color: 0x48515c, roughness: 0.68 })
-);
-runway.position.set(0, 0.04, 0);
-runway.receiveShadow = true;
-scene.add(runway);
-
-const lineMat = new THREE.MeshBasicMaterial({ color: 0xbcc6d4, transparent: true, opacity: 0.38 });
-for (const x of [-4.5, 0, 4.5]) {
-  const mark = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.012, 2.55), lineMat);
-  mark.position.set(x, 0.09, 0);
-  scene.add(mark);
-}
-
-const backWall = new THREE.Mesh(
-  new THREE.PlaneGeometry(22, 9),
-  new THREE.MeshStandardMaterial({ color: 0x171c26, roughness: 1 })
-);
-backWall.position.set(0, 4.4, -5.6);
-scene.add(backWall);
-
-const crowdGroup = new THREE.Group();
-const crowdGeo = new THREE.SphereGeometry(0.12, 8, 6);
-const crowdMats = [0x202631,0x2a303b,0x353b46,0x181d25].map(color => new THREE.MeshStandardMaterial({ color, roughness: 1 }));
-for (let row = 0; row < 8; row++) {
-  for (let i = 0; i < 34; i++) {
-    const m = new THREE.Mesh(crowdGeo, crowdMats[(i + row) % crowdMats.length]);
-    m.position.set(-8.2 + i * 0.5 + (row % 2) * 0.18, 1.4 + row * 0.42, -4.9 + row * 0.08);
-    crowdGroup.add(m);
-  }
-}
-scene.add(crowdGroup);
-
-for (const x of [-4.8, 0, 4.8]) {
-  const spot = new THREE.SpotLight(0xffffff, 24, 18, Math.PI / 10, 0.55, 1.5);
-  spot.position.set(x, 7.7, 1.5);
-  spot.target.position.set(x * 0.25, 0, 0);
-  scene.add(spot, spot.target);
-}
-
-const shadow = new THREE.Mesh(
-  new THREE.CircleGeometry(0.78, 40),
-  new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false })
-);
-shadow.rotation.x = -Math.PI / 2;
-shadow.position.y = 0.095;
-shadow.scale.set(1.45, 0.68, 1);
-scene.add(shadow);
-
-const materials = {
-  skin: new THREE.MeshStandardMaterial({ color: 0xe1aa80, roughness: 0.78 }),
-  skinDark: new THREE.MeshStandardMaterial({ color: 0xc98561, roughness: 0.8 }),
-  shirt: new THREE.MeshStandardMaterial({ color: 0xef5a59, roughness: 0.67 }),
-  shirtDark: new THREE.MeshStandardMaterial({ color: 0xb93e47, roughness: 0.72 }),
-  shorts: new THREE.MeshStandardMaterial({ color: 0x182a43, roughness: 0.75 }),
-  shoe: new THREE.MeshStandardMaterial({ color: 0xf1f3f6, roughness: 0.58 }),
-  shoeSole: new THREE.MeshStandardMaterial({ color: 0x232730, roughness: 0.8 }),
-  hair: new THREE.MeshStandardMaterial({ color: 0x24180f, roughness: 0.95 }),
-  white: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 }),
-  dark: new THREE.MeshStandardMaterial({ color: 0x0d1118, roughness: 0.7 })
-};
-
-function roundedBox(w, h, d, material) {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d, 2, 3, 2), material);
-  mesh.castShadow = true;
-  return mesh;
-}
-function capsule(radius, length, material, radial = 14) {
-  const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(radius, length, 6, radial), material);
-  mesh.castShadow = true;
-  return mesh;
-}
-function jointSphere(radius, material) {
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 12), material);
-  mesh.castShadow = true;
-  return mesh;
-}
-
-const athleteRoot = new THREE.Group();
-const bodyRig = new THREE.Group();
-athleteRoot.add(bodyRig);
-scene.add(athleteRoot);
-
-const torso = capsule(0.34, 0.62, materials.shirt);
-torso.scale.set(0.93, 1, 1.18);
-torso.position.y = 0.6;
-bodyRig.add(torso);
-const torsoSide = roundedBox(0.18, 0.68, 0.73, materials.shirtDark);
-torsoSide.position.set(-0.29, 0.61, 0);
-bodyRig.add(torsoSide);
-const chestStripe = roundedBox(0.055, 0.43, 0.48, materials.white);
-chestStripe.position.set(0.345, 0.68, 0);
-bodyRig.add(chestStripe);
-const backStripe = roundedBox(0.055, 0.28, 0.48, materials.dark);
-backStripe.position.set(-0.35, 0.69, 0);
-bodyRig.add(backStripe);
-
-const hips = roundedBox(0.62, 0.34, 0.82, materials.shorts);
-hips.position.y = -0.05;
-bodyRig.add(hips);
-
-const headGroup = new THREE.Group();
-headGroup.position.set(0, 1.47, 0);
-bodyRig.add(headGroup);
-const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.31, 22, 16), materials.skin);
-headMesh.scale.set(0.92, 1.08, 0.94);
-headMesh.castShadow = true;
-headGroup.add(headMesh);
-const hairMesh = new THREE.Mesh(new THREE.SphereGeometry(0.305, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.48), materials.hair);
-hairMesh.position.y = 0.09;
-hairMesh.rotation.z = -0.08;
-hairMesh.castShadow = true;
-headGroup.add(hairMesh);
-const nose = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.16, 10), materials.skinDark);
-nose.rotation.z = -Math.PI / 2;
-nose.position.set(0.315, 0.015, 0);
-headGroup.add(nose);
-const eye = new THREE.Mesh(new THREE.SphereGeometry(0.025, 10, 8), materials.dark);
-eye.position.set(0.255, 0.085, 0.185);
-headGroup.add(eye);
-
-function makeArm(side) {
-  const shoulder = new THREE.Group();
-  shoulder.position.set(0, 0.95, 0.48 * side);
-  bodyRig.add(shoulder);
-  const upper = capsule(0.105, 0.46, materials.skin);
-  upper.position.y = -0.34;
-  shoulder.add(upper);
-  const elbow = new THREE.Group();
-  elbow.position.y = -0.68;
-  shoulder.add(elbow);
-  elbow.add(jointSphere(0.115, materials.skin));
-  const lower = capsule(0.09, 0.42, materials.skin);
-  lower.position.y = -0.31;
-  elbow.add(lower);
-  const hand = jointSphere(0.12, materials.skin);
-  hand.position.y = -0.62;
-  elbow.add(hand);
-  return { shoulder, elbow };
-}
-function makeLeg(side) {
-  const hip = new THREE.Group();
-  hip.position.set(0, -0.12, 0.24 * side);
-  bodyRig.add(hip);
-  const thigh = capsule(0.15, 0.55, materials.shorts);
-  thigh.position.y = -0.4;
-  hip.add(thigh);
-  const knee = new THREE.Group();
-  knee.position.y = -0.8;
-  hip.add(knee);
-  knee.add(jointSphere(0.145, materials.skin));
-  const shin = capsule(0.12, 0.5, materials.skin);
-  shin.position.y = -0.37;
-  knee.add(shin);
-  const ankle = new THREE.Group();
-  ankle.position.y = -0.72;
-  knee.add(ankle);
-  const foot = roundedBox(0.42, 0.16, 0.25, materials.shoe);
-  foot.position.set(0.11, -0.06, 0);
-  ankle.add(foot);
-  const sole = roundedBox(0.43, 0.055, 0.26, materials.shoeSole);
-  sole.position.set(0.11, -0.14, 0);
-  ankle.add(sole);
-  return { hip, knee, ankle };
-}
-
-const leftArm = makeArm(1);
-const rightArm = makeArm(-1);
-const leftLeg = makeLeg(1);
-const rightLeg = makeLeg(-1);
-
-const ROOT_Y = 1.72;
-const zAxis = new THREE.Vector3(0, 0, 1);
-const yAxis = new THREE.Vector3(0, 1, 0);
-const xAxis = new THREE.Vector3(1, 0, 0);
-const qA = new THREE.Quaternion();
-const qB = new THREE.Quaternion();
-const qC = new THREE.Quaternion();
-
-function resetLimbPose() {
-  leftArm.shoulder.rotation.set(0,0,0);
-  rightArm.shoulder.rotation.set(0,0,0);
-  leftArm.elbow.rotation.set(0,0,0);
-  rightArm.elbow.rotation.set(0,0,0);
-  leftLeg.hip.rotation.set(0,0,0);
-  rightLeg.hip.rotation.set(0,0,0);
-  leftLeg.knee.rotation.set(0,0,0);
-  rightLeg.knee.rotation.set(0,0,0);
-  leftLeg.ankle.rotation.set(0,0,0);
-  rightLeg.ankle.rotation.set(0,0,0);
-}
-
-function setStandingPose(crouch = 0, landing = 0) {
-  resetLimbPose();
-  const c = Math.max(crouch, landing);
-  leftLeg.hip.rotation.z = -0.72 * c;
-  rightLeg.hip.rotation.z = -0.72 * c;
-  leftLeg.knee.rotation.z = 1.38 * c;
-  rightLeg.knee.rotation.z = 1.38 * c;
-  leftLeg.ankle.rotation.z = -0.35 * c;
-  rightLeg.ankle.rotation.z = -0.35 * c;
-  leftArm.shoulder.rotation.z = -1.9 * c;
-  rightArm.shoulder.rotation.z = -1.9 * c;
-  bodyRig.position.y = -0.22 * c;
-}
-
-function setRunPose(progress, crouch = 0, oneLeg = false) {
-  resetLimbPose();
-  const phase = progress * Math.PI * 6;
-  const swing = Math.sin(phase);
-  const swing2 = Math.sin(phase + Math.PI);
-  leftLeg.hip.rotation.z = swing * 0.72;
-  rightLeg.hip.rotation.z = swing2 * 0.72;
-  leftLeg.knee.rotation.z = Math.max(0, -swing) * 1.12;
-  rightLeg.knee.rotation.z = Math.max(0, -swing2) * 1.12;
-  leftArm.shoulder.rotation.z = swing2 * 0.72;
-  rightArm.shoulder.rotation.z = swing * 0.72;
-  leftArm.elbow.rotation.z = 0.25;
-  rightArm.elbow.rotation.z = 0.25;
-  bodyRig.rotation.z = -0.08;
-  bodyRig.position.y = Math.abs(Math.sin(phase)) * 0.035;
-
-  if (crouch > 0) {
-    leftLeg.hip.rotation.z = THREE.MathUtils.lerp(leftLeg.hip.rotation.z, -0.7, crouch);
-    rightLeg.hip.rotation.z = THREE.MathUtils.lerp(rightLeg.hip.rotation.z, -0.7, crouch);
-    leftLeg.knee.rotation.z = THREE.MathUtils.lerp(leftLeg.knee.rotation.z, 1.35, crouch);
-    rightLeg.knee.rotation.z = THREE.MathUtils.lerp(rightLeg.knee.rotation.z, 1.35, crouch);
-    leftArm.shoulder.rotation.z = THREE.MathUtils.lerp(leftArm.shoulder.rotation.z, -1.8, crouch);
-    rightArm.shoulder.rotation.z = THREE.MathUtils.lerp(rightArm.shoulder.rotation.z, -1.8, crouch);
-    bodyRig.position.y -= 0.18 * crouch;
-  }
-
-  if (oneLeg && crouch > 0.55) {
-    const k = (crouch - 0.55) / 0.45;
-    rightLeg.hip.rotation.z = THREE.MathUtils.lerp(rightLeg.hip.rotation.z, -1.15, k);
-    rightLeg.knee.rotation.z = THREE.MathUtils.lerp(rightLeg.knee.rotation.z, 1.8, k);
-    leftLeg.hip.rotation.z = THREE.MathUtils.lerp(leftLeg.hip.rotation.z, 0.18, k);
-    leftLeg.knee.rotation.z = THREE.MathUtils.lerp(leftLeg.knee.rotation.z, 0.18, k);
-  }
-}
-
-function setAirPose(trick, a) {
-  resetLimbPose();
-  bodyRig.position.y = 0;
-  const enter = smoothstep(0.06, 0.22, a);
-  const exit = 1 - smoothstep(0.72, 0.94, a);
-  const tuck = Math.min(enter, exit);
-
-  if (trick.pose === 'tuck') {
-    const tight = trick.rotations > 1 ? 1 : 0.82;
-    const p = tuck * tight;
-    leftLeg.hip.rotation.z = -1.05 * p;
-    rightLeg.hip.rotation.z = -1.05 * p;
-    leftLeg.knee.rotation.z = 2.05 * p;
-    rightLeg.knee.rotation.z = 2.05 * p;
-    leftArm.shoulder.rotation.z = -1.25 * p;
-    rightArm.shoulder.rotation.z = -1.25 * p;
-    leftArm.elbow.rotation.z = 1.0 * p;
-    rightArm.elbow.rotation.z = 1.0 * p;
-  } else if (trick.pose === 'spin') {
-    leftArm.shoulder.rotation.z = -1.35;
-    rightArm.shoulder.rotation.z = 1.35;
-    leftArm.elbow.rotation.z = 1.0;
-    rightArm.elbow.rotation.z = -1.0;
-    leftLeg.hip.rotation.z = -0.1;
-    rightLeg.hip.rotation.z = 0.1;
-  } else if (trick.pose === 'layout') {
-    leftArm.shoulder.rotation.z = -2.35 * enter * exit;
-    rightArm.shoulder.rotation.z = -2.0 * enter * exit;
-    leftLeg.hip.rotation.z = -0.12;
-    rightLeg.hip.rotation.z = 0.08;
-  } else if (trick.pose === 'side') {
-    leftArm.shoulder.rotation.z = -1.4;
-    rightArm.shoulder.rotation.z = -0.3;
-    leftLeg.hip.rotation.z = -0.65 * tuck;
-    rightLeg.hip.rotation.z = -0.25 * tuck;
-    leftLeg.knee.rotation.z = 1.2 * tuck;
-    rightLeg.knee.rotation.z = 0.8 * tuck;
-  }
-}
-
-const tricks = [
-  { id:'front', name:'Frontflip', difficulty:'Beginner', note:'Forward somersault: head and chest rotate toward the direction of travel.', type:'front', takeoff:'run', height:2.45, travel:1.35, rotations:1, pose:'tuck', coinReward:16, price:0 },
-  { id:'back', name:'Backflip', difficulty:'Beginner', note:'Standing backward somersault with almost no forward travel.', type:'back', takeoff:'stand', height:2.5, travel:0.12, rotations:1, pose:'tuck', coinReward:18, price:0 },
-  { id:'side', name:'Sideflip', difficulty:'Beginner', note:'Forward travel with a side roll around the direction-of-travel axis.', type:'side', takeoff:'run', height:2.35, travel:1.15, rotations:1, pose:'side', coinReward:18, price:0 },
-  { id:'spin', name:'360 Spin', difficulty:'Intermediate', note:'Upright full twist around the vertical axis without a somersault.', type:'spin', takeoff:'run', height:1.85, travel:1.0, rotations:1, pose:'spin', coinReward:20, price:0 },
-  { id:'gainer', name:'Gainer', difficulty:'Intermediate', note:'Backward rotation while continuing forward from a one-leg takeoff.', type:'gainer', takeoff:'oneLeg', height:2.45, travel:2.05, rotations:1, pose:'layout', coinReward:28, price:220 },
-  { id:'webster', name:'Webster', difficulty:'Intermediate', note:'Forward flip from one leg with obvious forward travel.', type:'webster', takeoff:'oneLeg', height:2.3, travel:2.15, rotations:1, pose:'tuck', coinReward:30, price:260 },
-  { id:'cork', name:'Cork 360', difficulty:'Advanced', note:'A backward off-axis flip blended with a full twist.', type:'cork', takeoff:'run', height:2.55, travel:1.35, rotations:1, pose:'layout', coinReward:34, price:320 },
-  { id:'backfull', name:'Back Full', difficulty:'Advanced', note:'One backward somersault with one full twist.', type:'backfull', takeoff:'stand', height:2.65, travel:0.18, rotations:1, pose:'layout', coinReward:38, price:390 },
-  { id:'doubleback', name:'Double Backflip', difficulty:'Advanced', note:'Two backward somersaults from a standing two-foot takeoff.', type:'doubleback', takeoff:'stand', height:3.0, travel:0.2, rotations:2, pose:'tuck', coinReward:44, price:470 },
-  { id:'doublefront', name:'Double Frontflip', difficulty:'Expert', note:'Two forward somersaults with controlled forward travel.', type:'doublefront', takeoff:'run', height:2.95, travel:1.15, rotations:2, pose:'tuck', coinReward:50, price:560 }
+const characters=[
+ {id:'rookie',name:'Rookie',price:0,shirt:0xef5a59,shorts:0x182a43,skin:0xe1aa80,hair:0x24180f,desc:'Default athlete.'},
+ {id:'neon',name:'Neon',price:180,shirt:0x54f7c7,shorts:0x111827,skin:0xe1aa80,hair:0x111111,desc:'Bright competition kit.'},
+ {id:'midnight',name:'Midnight',price:260,shirt:0x5865f2,shorts:0x090b10,skin:0xb97855,hair:0x0b0908,desc:'Dark arena setup.'},
+ {id:'gold',name:'Gold Pro',price:420,shirt:0xf5c451,shorts:0x352610,skin:0xd59b74,hair:0x2b1a0e,desc:'For people who need everyone to know.'}
 ];
-
-const characters = [
-  { id:'rookie', name:'Rookie', price:0, shirt:0xef5a59, shirtDark:0xb93e47, shorts:0x182a43, shoe:0xf1f3f6, hair:0x24180f, swatch:'#ef5a59', label:'R' },
-  { id:'neon', name:'Neon Racer', price:180, shirt:0x33e7d0, shirtDark:0x138f87, shorts:0x10161d, shoe:0xdffff9, hair:0x151515, swatch:'#33e7d0', label:'N' },
-  { id:'shadow', name:'Shadow', price:340, shirt:0x171922, shirtDark:0x090a0e, shorts:0x06070a, shoe:0x8b6cff, hair:0x080808, swatch:'#7660d8', label:'S' },
-  { id:'gold', name:'Gold Pro', price:620, shirt:0xf0b93f, shirtDark:0xaa7216, shorts:0xf1f3f6, shoe:0x171a20, hair:0x2d1c0d, swatch:'#f0b93f', label:'G' }
-];
-
-const SAVE_KEY = 'trickJudgeSaveV4';
-const defaultSave = {
-  coins: 0,
-  ownedCharacters: ['rookie'],
-  equippedCharacter: 'rookie',
-  ownedTricks: ['front','back','side','spin']
-};
-
-function loadSave() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-    if (!parsed || typeof parsed !== 'object') return structuredClone(defaultSave);
-    const merged = { ...structuredClone(defaultSave), ...parsed };
-    if (!Array.isArray(merged.ownedCharacters)) merged.ownedCharacters = ['rookie'];
-    if (!Array.isArray(merged.ownedTricks)) merged.ownedTricks = ['front','back','side','spin'];
-    if (!merged.ownedCharacters.includes('rookie')) merged.ownedCharacters.unshift('rookie');
-    for (const id of ['front','back','side','spin']) if (!merged.ownedTricks.includes(id)) merged.ownedTricks.push(id);
-    return merged;
-  } catch {
-    return structuredClone(defaultSave);
-  }
-}
-let save = loadSave();
-function persistSave() {
-  localStorage.setItem(SAVE_KEY, JSON.stringify(save));
-}
-
-function applyCharacter(id) {
-  const c = characters.find(item => item.id === id) || characters[0];
-  materials.shirt.color.setHex(c.shirt);
-  materials.shirtDark.color.setHex(c.shirtDark);
-  materials.shorts.color.setHex(c.shorts);
-  materials.shoe.color.setHex(c.shoe);
-  materials.hair.color.setHex(c.hair);
-  save.equippedCharacter = c.id;
-  persistSave();
-}
+function applyCharacter(id){const c=characters.find(x=>x.id===id)||characters[0];mat.shirt.color.setHex(c.shirt);mat.shirtDark.color.setHex(c.shirt).multiplyScalar(.72);mat.shorts.color.setHex(c.shorts);mat.skin.color.setHex(c.skin);mat.skinDark.color.setHex(c.skin).multiplyScalar(.82);mat.hair.color.setHex(c.hair)}
 applyCharacter(save.equippedCharacter);
 
-let score = 0;
-let round = 1;
-let lives = 3;
-let combo = 1;
-let current = null;
-let locked = false;
-let performanceRunning = false;
-let performanceStart = 0;
-let performanceDuration = 1800;
-const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const tricks=[
+ {id:'backflip',name:'Backflip',difficulty:'Beginner',price:0,mode:'standing',axis:'back',turns:1,height:2.25,travel:.18,note:'Standing backflip: nearly vertical takeoff, backward rotation, almost no forward travel.'},
+ {id:'frontflip',name:'Frontflip',difficulty:'Beginner',price:0,mode:'run',axis:'front',turns:1,height:2.05,travel:2.15,note:'Forward rotation while continuing to travel forward.'},
+ {id:'sideflip',name:'Sideflip',difficulty:'Beginner',price:0,mode:'run',axis:'side',turns:1,height:2.05,travel:1.9,note:'Sideways barrel rotation around the travel axis.'},
+ {id:'spin360',name:'360 Spin',difficulty:'Intermediate',price:0,mode:'run',axis:'spin',turns:1,height:1.75,travel:1.8,note:'Mostly upright, one full twist around the vertical axis.'},
+ {id:'gainer',name:'Gainer',difficulty:'Intermediate',price:160,mode:'run',axis:'back',turns:1,height:2.2,travel:2.45,oneLeg:true,note:'Forward travel with a backward flip from a running one-leg takeoff.'},
+ {id:'cork360',name:'Cork 360',difficulty:'Intermediate',price:220,mode:'run',axis:'cork',turns:1,height:2.3,travel:2.1,note:'Off-axis backward flip blended with a twist.'},
+ {id:'doubleback',name:'Double Backflip',difficulty:'Advanced',price:320,mode:'standing',axis:'back',turns:2,height:2.85,travel:.22,note:'Two backward rotations with a vertical standing takeoff.'},
+ {id:'doublefront',name:'Double Frontflip',difficulty:'Advanced',price:360,mode:'run',axis:'front',turns:2,height:2.7,travel:2.3,note:'Two forward rotations while traveling forward.'},
+ {id:'cork720',name:'Cork 720',difficulty:'Expert',price:520,mode:'run',axis:'cork',turns:2,height:2.7,travel:2.25,note:'Off-axis flip with two twists worth of rotation.'}
+];
 
-function clamp01(v){ return Math.max(0, Math.min(1, v)); }
-function smoothstep(a,b,v){
-  if (a === b) return v >= b ? 1 : 0;
-  const x = clamp01((v-a)/(b-a));
-  return x*x*(3-2*x);
+let score=0,round=1,lives=3,combo=1,current=null,locked=false,anim=null;
+function ownedTricks(){return tricks.filter(t=>save.ownedTricks.includes(t.id))}
+function updateHud(){scoreEl.textContent=score;roundEl.textContent=round;livesEl.textContent=lives;comboEl.textContent='×'+combo;coinsEl.textContent=save.coins;shopCoinsEl.textContent=save.coins}
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function optionsFor(t){return shuffle([t,...shuffle(tricks.filter(x=>x.id!==t.id)).slice(0,3)])}
+function renderAnswers(){answersEl.innerHTML='';for(const opt of optionsFor(current)){const b=document.createElement('button');b.className='answer-btn';b.type='button';b.textContent=opt.name;b.addEventListener('click',()=>guess(opt,b));answersEl.appendChild(b)}}
+function quatFor(trick,p){const angle=Math.PI*2*trick.turns*p;const q=new THREE.Quaternion();if(trick.axis==='front')q.setFromAxisAngle(new THREE.Vector3(0,0,1),-angle);else if(trick.axis==='back')q.setFromAxisAngle(new THREE.Vector3(0,0,1),angle);else if(trick.axis==='side')q.setFromAxisAngle(new THREE.Vector3(1,0,0),angle);else if(trick.axis==='spin')q.setFromAxisAngle(new THREE.Vector3(0,1,0),-angle);else{const tilt=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),angle*.72);const twist=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),-angle);q.copy(twist).multiply(tilt)}return q}
+function poseAir(trick,p){if(trick.axis==='spin'){layoutPose();return}if(trick.axis==='side'){sidePose();return}if(trick.axis==='cork'){layoutPose();return}const tight=Math.sin(Math.PI*p);tuckPose(.45+.55*tight)}
+function runAnimation(trick,slow=false){if(anim)cancelAnimationFrame(anim);locked=false;const start=performance.now();const dur=(slow?2.45:1)*(trick.mode==='standing'?2500:2900);statusText.textContent=slow?'SLOW MOTION':'WATCH THE TRICK';
+ const runPart=trick.mode==='run'?0.34:0.18,airEnd=.84,startX=trick.mode==='run'?-4.2:-.15,takeX=trick.mode==='run'?-1.15:0,landX=takeX+trick.travel;
+ function frame(now){const t=Math.min(1,(now-start)/dur);root.quaternion.identity();
+   if(t<runPart){const r=t/runPart;if(trick.mode==='run'){root.position.set(THREE.MathUtils.lerp(startX,takeX,r),ROOT_Y,0);runPose(r);if(r>.78){const c=(r-.78)/.22;crouchPose(c);}}else{root.position.set(0,ROOT_Y,0);crouchPose(Math.sin(r*Math.PI)*.9)}}
+   else if(t<airEnd){const p=(t-runPart)/(airEnd-runPart);const x=THREE.MathUtils.lerp(takeX,landX,p);const y=ROOT_Y+4*trick.height*p*(1-p);root.position.set(x,y,0);root.quaternion.copy(quatFor(trick,p));poseAir(trick,p)}
+   else{const l=(t-airEnd)/(1-airEnd);root.position.set(landX,ROOT_Y,0);root.quaternion.identity();landingPose(Math.max(0,1-l));}
+   shadow.position.x=root.position.x;const h=Math.max(0,root.position.y-ROOT_Y);shadow.material.opacity=.28*Math.max(.25,1-h/4);shadow.scale.set(1.5+h*.12,.7+h*.05,1);renderer.render(scene,camera);
+   if(t<1)anim=requestAnimationFrame(frame);else{statusText.textContent='MAKE YOUR CALL';anim=null}}
+ anim=requestAnimationFrame(frame);
 }
-function easeOutCubic(x){ return 1-Math.pow(1-x,3); }
-function easeInOutCubic(x){ return x<.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; }
+function newRound(){locked=false;const pool=ownedTricks();let next=pool[Math.floor(Math.random()*pool.length)];if(current&&pool.length>1){while(next.id===current.id)next=pool[Math.floor(Math.random()*pool.length)]}current=next;difficultyEl.textContent=current.difficulty;feedbackEl.textContent='Watch the takeoff, travel direction and rotation axis.';renderAnswers();runAnimation(current,false)}
+function guess(opt,button){if(locked||lives<=0)return;locked=true;const buttons=[...answersEl.querySelectorAll('.answer-btn')];buttons.forEach(b=>b.disabled=true);const correct=opt.id===current.id;buttons.find(b=>b.textContent===current.name)?.classList.add('correct');if(correct){button.classList.add('correct');const pts=100*combo,earned=12+Math.min(18,(combo-1)*3);score+=pts;save.coins+=earned;combo=Math.min(8,combo+1);persist();feedbackEl.textContent=`Correct — +${pts} score, +${earned} coins. ${current.note}`;statusText.textContent='CORRECT'}else{button.classList.add('wrong');lives--;combo=1;score=Math.max(0,score-50);feedbackEl.textContent=`Wrong. That was ${current.name}. ${current.note}`;statusText.textContent='WRONG'}updateHud();if(lives<=0){restartBtn.classList.remove('hidden');feedbackEl.textContent+=` Game over — ${score} points.`;return}setTimeout(()=>{round++;updateHud();newRound()},1500)}
+function restart(){score=0;round=1;lives=3;combo=1;restartBtn.classList.add('hidden');updateHud();newRound()}
 
-function trickQuaternion(trick, a) {
-  const revolutions = Math.PI * 2 * trick.rotations * a;
-  bodyRig.quaternion.identity();
-  if (trick.type === 'front' || trick.type === 'webster' || trick.type === 'doublefront') {
-    bodyRig.quaternion.setFromAxisAngle(zAxis, -revolutions);
-  } else if (trick.type === 'back' || trick.type === 'gainer' || trick.type === 'doubleback') {
-    bodyRig.quaternion.setFromAxisAngle(zAxis, revolutions);
-  } else if (trick.type === 'side') {
-    bodyRig.quaternion.setFromAxisAngle(xAxis, revolutions);
-  } else if (trick.type === 'spin') {
-    bodyRig.quaternion.setFromAxisAngle(yAxis, -revolutions);
-  } else if (trick.type === 'cork') {
-    qA.setFromAxisAngle(zAxis, Math.PI * 2 * a);
-    qB.setFromAxisAngle(yAxis, -Math.PI * 2 * a);
-    qC.setFromAxisAngle(xAxis, 0.55 * Math.sin(Math.PI * a));
-    bodyRig.quaternion.copy(qA).multiply(qB).multiply(qC);
-  } else if (trick.type === 'backfull') {
-    qA.setFromAxisAngle(zAxis, Math.PI * 2 * a);
-    qB.setFromAxisAngle(yAxis, -Math.PI * 2 * a);
-    bodyRig.quaternion.copy(qA).multiply(qB);
-  }
-}
+function renderShop(){characterShop.innerHTML='';trickShop.innerHTML='';updateHud();for(const c of characters){const owned=save.ownedCharacters.includes(c.id),equipped=save.equippedCharacter===c.id;const el=document.createElement('div');el.className='shop-item '+(owned?'owned':'');el.innerHTML=`<div class="shop-swatch" style="background:#${c.shirt.toString(16).padStart(6,'0')}">●</div><div class="shop-copy"><strong>${c.name}</strong><small>${c.desc}</small><div class="shop-price"><span class="coin-dot"></span>${c.price}</div></div><div class="shop-action-wrap"><button class="shop-action ${owned?'':'buy'} ${equipped?'equipped':''}" type="button">${equipped?'Equipped':owned?'Equip':'Buy'}</button></div>`;const b=el.querySelector('button');b.addEventListener('click',()=>{if(equipped)return;if(owned){save.equippedCharacter=c.id;applyCharacter(c.id);persist();shopMessage.textContent=`Equipped ${c.name}.`;renderShop();return}if(save.coins<c.price){shopMessage.textContent='Not enough coins.';return}save.coins-=c.price;save.ownedCharacters.push(c.id);save.equippedCharacter=c.id;applyCharacter(c.id);persist();shopMessage.textContent=`Bought ${c.name}.`;renderShop()});characterShop.appendChild(el)}
+ for(const t of tricks.filter(t=>t.price>0)){const owned=save.ownedTricks.includes(t.id);const el=document.createElement('div');el.className='shop-item '+(owned?'owned':'');el.innerHTML=`<div class="shop-swatch" style="background:#242c39;color:#fff">↻</div><div class="shop-copy"><strong>${t.name}</strong><small>${t.note}</small><div class="shop-price"><span class="coin-dot"></span>${t.price}</div></div><div class="shop-action-wrap"><button class="shop-action ${owned?'equipped':'buy'}" type="button" ${owned?'disabled':''}>${owned?'Owned':'Unlock'}</button></div>`;const b=el.querySelector('button');b.addEventListener('click',()=>{if(owned)return;if(save.coins<t.price){shopMessage.textContent='Not enough coins.';return}save.coins-=t.price;save.ownedTricks.push(t.id);persist();shopMessage.textContent=`Unlocked ${t.name}. It can now appear in rounds.`;renderShop()});trickShop.appendChild(el)}}
 
-function updateAthlete(t, trick) {
-  const standing = trick.takeoff === 'stand';
-  const oneLeg = trick.takeoff === 'oneLeg';
-  const takeoffEnd = standing ? 0.27 : 0.3;
-  const landingStart = 0.82;
-  const takeoffX = standing ? -0.55 : -1.45;
-  const runStartX = -4.25;
-
-  athleteRoot.rotation.set(0,0,0);
-  bodyRig.quaternion.identity();
-  bodyRig.position.set(0,0,0);
-
-  if (t < takeoffEnd) {
-    const p = clamp01(t / takeoffEnd);
-    const crouch = smoothstep(0.62, 1, p);
-    if (standing) {
-      athleteRoot.position.set(takeoffX, ROOT_Y, 0);
-      setStandingPose(crouch);
-      bodyRig.rotation.z = 0;
-    } else {
-      const x = THREE.MathUtils.lerp(runStartX, takeoffX, easeInOutCubic(p));
-      athleteRoot.position.set(x, ROOT_Y, 0);
-      setRunPose(p, crouch, oneLeg);
-    }
-    shadow.position.x = athleteRoot.position.x;
-    shadow.material.opacity = 0.28;
-    shadow.scale.set(1.25, 0.62, 1);
-    return;
-  }
-
-  if (t <= landingStart) {
-    const a = clamp01((t - takeoffEnd) / (landingStart - takeoffEnd));
-    const jump = 4 * trick.height * a * (1-a);
-    const x = takeoffX + trick.travel * a;
-    athleteRoot.position.set(x, ROOT_Y + jump, 0);
-    setAirPose(trick, a);
-    trickQuaternion(trick, a);
-
-    shadow.position.x = x;
-    const h = clamp01(jump / Math.max(0.01, trick.height));
-    shadow.material.opacity = 0.28 * (1 - h * 0.7);
-    const s = 1 + h * 0.55;
-    shadow.scale.set(1.25 * s, 0.62 * s, 1);
-    return;
-  }
-
-  const p = clamp01((t - landingStart) / (1 - landingStart));
-  const finalX = takeoffX + trick.travel;
-  athleteRoot.position.set(finalX, ROOT_Y, 0);
-  bodyRig.quaternion.identity();
-  setStandingPose(1 - smoothstep(0.12, 0.95, p), 1 - smoothstep(0.12, 0.95, p));
-  bodyRig.rotation.z = THREE.MathUtils.lerp(-0.08, 0, smoothstep(0.3,1,p));
-  shadow.position.x = finalX;
-  shadow.material.opacity = 0.28;
-  shadow.scale.set(1.25, 0.62, 1);
-}
-
-function resizeRenderer() {
-  const w = Math.max(1, arena.clientWidth);
-  const h = Math.max(1, arena.clientHeight);
-  if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(h * renderer.getPixelRatio())) {
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-  }
-}
-
-function renderLoop(now) {
-  resizeRenderer();
-  if (performanceRunning && current) {
-    const elapsed = now - performanceStart;
-    const t = clamp01(elapsed / performanceDuration);
-    updateAthlete(t, current);
-    if (t >= 1) {
-      performanceRunning = false;
-      statusText.textContent = locked ? statusText.textContent : 'MAKE YOUR CALL';
-    }
-  }
-  renderer.render(scene, camera);
-  requestAnimationFrame(renderLoop);
-}
-requestAnimationFrame(renderLoop);
-
-function playPerformance(slow = false) {
-  if (!current) return;
-  performanceRunning = false;
-  updateAthlete(0, current);
-  statusText.textContent = slow ? 'SLOW MOTION REPLAY' : 'WATCH THE TRICK';
-  performanceDuration = reducedMotion ? 450 : (slow ? 4300 : 1950);
-  performanceStart = performance.now();
-  performanceRunning = true;
-}
-
-function shuffled(array) {
-  const copy = [...array];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
-
-function ownedTricks() {
-  return tricks.filter(t => save.ownedTricks.includes(t.id));
-}
-
-function getOptions(correct) {
-  const pool = ownedTricks();
-  const others = shuffled(pool.filter(t => t.id !== correct.id)).slice(0, 3);
-  return shuffled([correct, ...others]);
-}
-
-function renderAnswers() {
-  answersEl.innerHTML = '';
-  for (const option of getOptions(current)) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'answer-btn';
-    btn.textContent = option.name;
-    btn.addEventListener('click', () => guess(option.id, btn));
-    answersEl.appendChild(btn);
-  }
-}
-
-function updateHud() {
-  scoreEl.textContent = score;
-  roundEl.textContent = round;
-  livesEl.textContent = lives;
-  comboEl.textContent = `×${combo}`;
-  coinsEl.textContent = save.coins;
-  shopCoinsEl.textContent = save.coins;
-}
-
-function difficultyRank(level) {
-  return { Beginner:0, Intermediate:1, Advanced:2, Expert:3 }[level] ?? 0;
-}
-
-function newRound() {
-  locked = false;
-  let pool = ownedTricks();
-  const maxRank = round < 4 ? 0 : round < 8 ? 1 : round < 13 ? 2 : 3;
-  let eligible = pool.filter(t => difficultyRank(t.difficulty) <= maxRank);
-  if (eligible.length < 2) eligible = pool;
-  let next = eligible[Math.floor(Math.random() * eligible.length)];
-  if (current && eligible.length > 1) {
-    let guard = 0;
-    while (next.id === current.id && guard++ < 10) next = eligible[Math.floor(Math.random() * eligible.length)];
-  }
-  current = next;
-  difficultyEl.textContent = current.difficulty;
-  feedbackEl.textContent = 'Watch the takeoff, travel direction and rotation before guessing.';
-  renderAnswers();
-  playPerformance(false);
-}
-
-function guess(id, button) {
-  if (locked || lives <= 0) return;
-  locked = true;
-  const buttons = [...answersEl.querySelectorAll('.answer-btn')];
-  buttons.forEach(b => b.disabled = true);
-  const correctButton = buttons.find(b => b.textContent === current.name);
-  if (correctButton) correctButton.classList.add('correct');
-
-  if (id === current.id) {
-    const points = 100 * combo;
-    const coinBonus = current.coinReward + Math.max(0, combo - 1) * 3;
-    score += points;
-    save.coins += coinBonus;
-    persistSave();
-    combo = Math.min(combo + 1, 8);
-    feedbackEl.textContent = `Correct — +${points} score and +${coinBonus} coins. ${current.note}`;
-    statusText.textContent = 'CORRECT CALL';
-  } else {
-    button.classList.add('wrong');
-    lives -= 1;
-    combo = 1;
-    score = Math.max(0, score - 50);
-    feedbackEl.textContent = `Wrong. That was ${current.name}. ${current.note}`;
-    statusText.textContent = 'WRONG CALL';
-  }
-  updateHud();
-  renderShop();
-
-  if (lives <= 0) {
-    feedbackEl.textContent += ` Game over. Final score: ${score}.`;
-    restartBtn.classList.remove('hidden');
-    return;
-  }
-
-  setTimeout(() => {
-    round += 1;
-    updateHud();
-    newRound();
-  }, 1650);
-}
-
-function restart() {
-  score = 0;
-  round = 1;
-  lives = 3;
-  combo = 1;
-  current = null;
-  locked = false;
-  restartBtn.classList.add('hidden');
-  updateHud();
-  newRound();
-}
-
-function characterItemHtml(c) {
-  const owned = save.ownedCharacters.includes(c.id);
-  const equipped = save.equippedCharacter === c.id;
-  const price = c.price === 0 ? 'Free' : `${c.price}`;
-  const action = equipped ? 'Equipped' : owned ? 'Equip' : 'Buy';
-  const cls = equipped ? 'equipped' : owned ? '' : 'buy';
-  return `
-    <article class="shop-item ${owned ? 'owned' : ''}">
-      <div class="shop-swatch" style="background:${c.swatch}">${c.label}</div>
-      <div class="shop-copy">
-        <strong>${c.name}</strong>
-        <small>${equipped ? 'Currently in the arena.' : owned ? 'Owned character skin.' : 'New outfit and arena look.'}</small>
-      </div>
-      <div class="shop-action-wrap">
-        <div class="shop-price">${c.price ? '<span class="coin-dot"></span>' : ''}${price}</div>
-        <button class="shop-action ${cls}" data-character="${c.id}" type="button">${action}</button>
-      </div>
-    </article>`;
-}
-
-function trickItemHtml(t) {
-  const owned = save.ownedTricks.includes(t.id);
-  const price = t.price === 0 ? 'Free' : `${t.price}`;
-  return `
-    <article class="shop-item ${owned ? 'owned' : ''}">
-      <div class="shop-swatch" style="background:#202734;color:#e9edf5">${t.rotations > 1 ? '×2' : '↻'}</div>
-      <div class="shop-copy">
-        <strong>${t.name}</strong>
-        <small>${t.difficulty} · ${t.note}</small>
-      </div>
-      <div class="shop-action-wrap">
-        <div class="shop-price">${t.price ? '<span class="coin-dot"></span>' : ''}${price}</div>
-        <button class="shop-action ${owned ? 'equipped' : 'buy'}" data-trick="${t.id}" type="button" ${owned ? 'disabled' : ''}>${owned ? 'Unlocked' : 'Buy'}</button>
-      </div>
-    </article>`;
-}
-
-function renderShop() {
-  characterShop.innerHTML = characters.map(characterItemHtml).join('');
-  trickShop.innerHTML = tricks.map(trickItemHtml).join('');
-  shopCoinsEl.textContent = save.coins;
-
-  characterShop.querySelectorAll('[data-character]').forEach(btn => {
-    btn.addEventListener('click', () => buyOrEquipCharacter(btn.dataset.character));
-  });
-  trickShop.querySelectorAll('[data-trick]').forEach(btn => {
-    btn.addEventListener('click', () => buyTrick(btn.dataset.trick));
-  });
-}
-
-function buyOrEquipCharacter(id) {
-  const c = characters.find(item => item.id === id);
-  if (!c) return;
-  if (save.ownedCharacters.includes(id)) {
-    applyCharacter(id);
-    shopMessage.textContent = `${c.name} equipped.`;
-  } else if (save.coins >= c.price) {
-    save.coins -= c.price;
-    save.ownedCharacters.push(id);
-    save.equippedCharacter = id;
-    persistSave();
-    applyCharacter(id);
-    shopMessage.textContent = `${c.name} purchased and equipped.`;
-  } else {
-    shopMessage.textContent = `You need ${c.price - save.coins} more coins for ${c.name}.`;
-  }
-  updateHud();
-  renderShop();
-}
-
-function buyTrick(id) {
-  const t = tricks.find(item => item.id === id);
-  if (!t || save.ownedTricks.includes(id)) return;
-  if (save.coins >= t.price) {
-    save.coins -= t.price;
-    save.ownedTricks.push(id);
-    persistSave();
-    shopMessage.textContent = `${t.name} unlocked. It can now appear in rounds.`;
-  } else {
-    shopMessage.textContent = `You need ${t.price - save.coins} more coins for ${t.name}.`;
-  }
-  updateHud();
-  renderShop();
-}
-
-replayBtn.addEventListener('click', () => playPerformance(false));
-slowBtn.addEventListener('click', () => playPerformance(true));
-restartBtn.addEventListener('click', restart);
-
-const howDialog = $('#howDialog');
-$('#howBtn').addEventListener('click', () => howDialog.showModal());
-$('#closeHow').addEventListener('click', () => howDialog.close());
-howDialog.addEventListener('click', (e) => { if (e.target === howDialog) howDialog.close(); });
-
-$('#shopBtn').addEventListener('click', () => {
-  shopMessage.textContent = '';
-  renderShop();
-  shopDialog.showModal();
-});
-$('#closeShop').addEventListener('click', () => shopDialog.close());
-shopDialog.addEventListener('click', (e) => { if (e.target === shopDialog) shopDialog.close(); });
-
-window.addEventListener('resize', resizeRenderer);
-updateHud();
-renderShop();
-newRound();
+$('#shopBtn').addEventListener('click',()=>{renderShop();shopMessage.textContent='';shopDialog.showModal()});$('#closeShop').addEventListener('click',()=>shopDialog.close());shopDialog.addEventListener('click',e=>{if(e.target===shopDialog)shopDialog.close()});
+const how=$('#howDialog');$('#howBtn').addEventListener('click',()=>how.showModal());$('#closeHow').addEventListener('click',()=>how.close());how.addEventListener('click',e=>{if(e.target===how)how.close()});
+replayBtn.addEventListener('click',()=>runAnimation(current,false));slowBtn.addEventListener('click',()=>runAnimation(current,true));restartBtn.addEventListener('click',restart);
+function resize(){const w=arena.clientWidth,h=arena.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();renderer.render(scene,camera)}new ResizeObserver(resize).observe(arena);window.addEventListener('resize',resize);
+updateHud();resize();newRound();
