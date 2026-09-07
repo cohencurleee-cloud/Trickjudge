@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#07090d" />
+  <meta name="theme-color" content="#090d12" />
   <title>Trick Judge</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -13,7 +13,7 @@
       <div>
         <p class="eyebrow">JUDGE CAM</p>
         <h1>Trick Judge</h1>
-        <p class="subhead">Read the takeoff, axis and rotation. Then make the call.</p>
+        <p class="subhead">Read the takeoff, axis, and travel. Then make the call.</p>
       </div>
       <div class="top-actions">
         <button id="shopBtn" class="coin-btn" type="button"><span class="coin-dot"></span> Shop</button>
@@ -33,6 +33,7 @@
       <div class="arena" id="arena">
         <canvas id="arenaCanvas" aria-label="3D arena view of an athlete performing a trick"></canvas>
         <div class="arena-vignette"></div>
+        <div class="arena-glow"></div>
         <div class="arena-topline">
           <div class="live-pill"><span class="live-dot"></span><span id="statusText">WATCH THE TRICK</span></div>
           <div class="facing-pill">TRAVEL <b>→</b></div>
@@ -88,7 +89,7 @@
         <div class="shop-section-head">
           <div>
             <h3>Tricks</h3>
-            <p>Unlocked tricks get added to the moves you can be judged on.</p>
+            <p>Unlocked tricks get added to the moves that can appear in rounds.</p>
           </div>
         </div>
         <div id="trickShop" class="shop-grid"></div>
@@ -103,9 +104,9 @@
         <h2>How to play</h2>
         <button id="closeHow" class="icon-btn" type="button" aria-label="Close">×</button>
       </div>
-      <p>The athlete faces and travels to the right on running tricks. The nose, chest stripe and shoes make direction readable.</p>
-      <p>A standing backflip stays almost over the takeoff point. A gainer travels forward while rotating backward, so the two no longer look like the same move.</p>
-      <p>Correct calls earn score, combo and coins. Spend coins in the shop on character skins and new tricks.</p>
+      <p>The athlete faces and travels to the right on running tricks. The face, chest stripe and body lean make direction readable.</p>
+      <p>A standing backflip stays almost above the takeoff point. A gainer keeps traveling forward while rotating backward.</p>
+      <p>Correct answers earn score and coins. Use coins to unlock more characters and harder tricks.</p>
     </div>
   </dialog>
 
