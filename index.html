@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0a0b0f" />
+  <meta name="theme-color" content="#07090d" />
   <title>Trick Judge</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -11,8 +11,9 @@
   <main class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">LIVE ARENA</p>
+        <p class="eyebrow">JUDGE CAM</p>
         <h1>Trick Judge</h1>
+        <p class="subhead">Read the takeoff, axis and rotation. Then make the call.</p>
       </div>
       <button id="howBtn" class="ghost-btn" type="button">How to play</button>
     </header>
@@ -21,35 +22,19 @@
       <div class="hud-card"><span>Score</span><strong id="score">0</strong></div>
       <div class="hud-card"><span>Round</span><strong id="round">1</strong></div>
       <div class="hud-card"><span>Lives</span><strong id="lives">3</strong></div>
-      <div class="hud-card"><span>Combo</span><strong id="combo">x1</strong></div>
+      <div class="hud-card"><span>Combo</span><strong id="combo">×1</strong></div>
     </section>
 
-    <section class="arena-wrap">
-      <div class="arena" id="arena" tabindex="0" aria-label="Arena trick performance">
-        <div class="arena-lights"></div>
-        <div class="stands stands-left"></div>
-        <div class="stands stands-right"></div>
-        <div class="scoreboard"><span id="statusText">WATCH THE TRICK</span></div>
-        <div class="runway"></div>
-        <div class="landing-line"></div>
-
-        <div class="motion-trail" id="trailA"></div>
-        <div class="motion-trail" id="trailB"></div>
-
-        <div class="athlete-stage" id="athleteStage" aria-hidden="true">
-          <div class="athlete" id="athlete">
-            <div class="head"></div>
-            <div class="neck"></div>
-            <div class="torso"></div>
-            <div class="hips"></div>
-            <div class="limb arm left-arm"><span class="upper"></span><span class="lower"></span></div>
-            <div class="limb arm right-arm"><span class="upper"></span><span class="lower"></span></div>
-            <div class="limb leg left-leg"><span class="upper"></span><span class="lower"></span><span class="shoe"></span></div>
-            <div class="limb leg right-leg"><span class="upper"></span><span class="lower"></span><span class="shoe"></span></div>
-          </div>
+    <section class="arena-shell">
+      <div class="arena" id="arena">
+        <canvas id="arenaCanvas" aria-label="3D arena view of an athlete performing a trick"></canvas>
+        <div class="arena-vignette"></div>
+        <div class="arena-topline">
+          <div class="live-pill"><span class="live-dot"></span><span id="statusText">WATCH THE TRICK</span></div>
+          <div class="facing-pill">START FACING <b>→</b></div>
         </div>
-
-        <div class="judge-rail"><span></span><span></span><span></span><span></span></div>
+        <div class="judge-desk" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div id="webglError" class="webgl-error hidden">Your browser could not start the 3D arena.</div>
       </div>
     </section>
 
@@ -68,7 +53,7 @@
         <div class="difficulty-pill" id="difficulty">Beginner</div>
       </div>
       <div class="answers" id="answers"></div>
-      <p class="feedback" id="feedback" aria-live="polite">Watch the full motion before guessing.</p>
+      <p class="feedback" id="feedback" aria-live="polite">Watch the takeoff and rotation before guessing.</p>
     </section>
   </main>
 
@@ -78,11 +63,12 @@
         <h2>How to play</h2>
         <button id="closeHow" class="icon-btn" type="button" aria-label="Close">×</button>
       </div>
-      <p>Watch the athlete from the judge's seat, then identify the trick. Correct answers build score and combo. Wrong answers cost a life.</p>
-      <p>The motion is intentionally exaggerated so front, back, side, and twisting tricks have different axes and body positions.</p>
+      <p>The athlete always starts facing right. The face, nose, chest stripe and shoes make orientation readable while the body rotates.</p>
+      <p>Frontflip rotates toward the athlete's facing direction. Backflip rotates away from it. Sideflip rolls around the direction of travel. Spins rotate upright around the vertical axis.</p>
+      <p>Correct calls add score and combo. Wrong calls cost a life.</p>
     </div>
   </dialog>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
